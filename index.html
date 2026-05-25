@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APOLLO-LOGIC // Mission Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --space-black: #060713;
+            --glass-bg: rgba(20, 24, 46, 0.6);
+            --glass-border: rgba(0, 242, 254, 0.15);
+            --neon-cyan: #00f2fe;
+            --neon-purple: #4facfe;
+            --neon-green: #00e676;
+            --neon-red: #ff1744;
+            --text-main: #e0e6ed;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #1a1c3a 0%, var(--space-black) 100%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px dashed rgba(0, 242, 254, 0.2);
+            padding-bottom: 15px;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            text-shadow: 0 0 20px var(--neon-cyan);
+            margin: 0;
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+        }
+
+        .subtitle {
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Layout Dashboard */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            flex: 1;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard { grid-template-columns: 1fr; }
+        }
+
+        /* PAINEL ESQUERDO: O FOGUETE */
+        .launchpad {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Foguete em CSS */
+        .rocket-stage {
+            position: relative;
+            width: 100px;
+            height: 300px;
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .rocket-body {
+            width: 50px;
+            height: 150px;
+            background: linear-gradient(to right, #e0e0e0, #ffffff, #9e9e9e);
+            border-radius: 50% 50% 0 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .rocket-window {
+            width: 18px;
+            height: 18px;
+            background: #00d2ff;
+            border: 3px solid #555;
+            border-radius: 50%;
+            margin: 30px auto 0;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .rocket-fins {
+            position: absolute;
+            bottom: 100px;
+            width: 90px;
+            height: 50px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 1;
+        }
+
+        .fin {
+            width: 25px;
+            height: 50px;
+            background: var(--neon-purple);
+            border-radius: 100% 0 0 0;
+        }
+        .fin.right { transform: scaleX(-1); }
+
+        .fire-thruster {
+            width: 20px;
+            height: 40px;
+            background: linear-gradient(to bottom, #ff9800, transparent);
+            position: absolute;
+            bottom: 70px;
+            border-radius: 0 0 50% 50%;
+            opacity: 0;
+            transition: 0.3s;
+        }
+
+        /* Animações de Estado do Foguete */
+        .ready-to-fly .rocket-body {
+            animation: shake 0.1s infinite alternate;
+        }
+        .ready-to-fly .fire-thruster {
+            opacity: 1;
+            animation: flame 0.2s infinite alternate;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            100% { transform: translate(-1px, -1px) rotate(0.5deg); }
+        }
+        @keyframes flame {
+            0% { height: 40px; background: #ff5722; box-shadow: 0 0 20px #ff5722; }
+            100% { height: 60px; background: #ffeb3b; box-shadow: 0 0 40px #ffeb3b; }
+        }
+
+        /* Animação de Decolagem Completa */
+        .blasting-off {
+            animation: launchAway 1.5s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards !important;
+        }
+        @keyframes launchAway {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-1000px) scale(0.2); opacity: 0; }
+        }
+
+        /* Botão Mestre de Lançamento */
+        .master-launch-btn {
+            font-family: 'Orbitron', sans-serif;
+            width: 100%;
+            padding: 15px;
+            background: #222;
+            border: 2px solid #444;
+            color: #666;
+            font-size: 1.3rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border-radius: 8px;
+            cursor: not-allowed;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .master-launch-btn.unlocked {
+            background: linear-gradient(45deg, var(--neon-green), #00b0ff);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(0, 230, 118, 0.6);
+            text-shadow: 0 0 5px #fff;
+        }
+
+        /* PAINEL DIREITO: AS PORTAS LÓGICAS */
+        .gate-matrix {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .gate-matrix { grid-template-columns: 1fr; }
+        }
+
+        .gate-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .gate-card:hover {
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
+        }
+
+        .gate-card.passed {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.1);
+        }
+
+        .gate-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            background: rgba(255,255,255,0.05);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: var(--neon-purple);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .gate-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+        }
+
+        .gate-card p {
+            font-size: 0.9rem;
+            color: #a0aec0;
+            margin: 0 0 20px 0;
+            line-height: 1.4;
+        }
+
+        /* Controles de Input (Switches Futuristas) */
+        .input-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .interactive-node {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: 0.2s;
+        }
+
+        .interactive-node:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .node-key {
+            font-size: 0.7rem;
+            background: #333;
+            padding: 2px 5px;
+            border-radius: 4px;
+            border-bottom: 2px solid #111;
+            color: #aaa;
+        }
+
+        .node-status {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            color: var(--neon-red);
+        }
+
+        .interactive-node.active-input {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+        }
+
+        .interactive-node.active-input .node-status {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 5px var(--neon-cyan);
+        }
+
+        /* LED de saída das portas */
+        .output-led {
+            background: rgba(0,0,0,0.5);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: #666;
+            letter-spacing: 1px;
+            border: 1px solid #222;
+        }
+
+        .gate-card.passed .output-led {
+            color: var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green);
+            border-color: rgba(0, 230, 118, 0.3);
+            background: rgba(0, 230, 118, 0.05);
+        }
+
+        /* Rodapé com Atalhos */
+        footer {
+            margin-top: auto;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #718096;
+        }
+
+        .keyboard-legend span {
+            background: #222;
+            padding: 3px 6px;
+            border-radius: 4px;
+            color: #fff;
+            margin: 0 3px;
+            border-bottom: 2px solid #000;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>APOLLO-LOGIC CONTROL</h1>
+    </header>
+
+    <div class="dashboard">
+        
+        <div class="launchpad" id="launchpad-panel">
+            <div style="text-align: center;">
+                <h2 style="margin:0; font-family:'Orbitron'; font-size:1.4rem;">STATUS DO PAD</h2>
+                <div id="global-status-text" style="color: var(--neon-red); font-weight: bold; margin-top:5px; letter-spacing:1px;">SISTEMAS INCOMPLETOS</div>
+            </div>
+
+            <div class="rocket-stage" id="rocket-node">
+                <div class="rocket-body">
+                    <div class="rocket-window"></div>
+                </div>
+                <div class="rocket-fins">
+                    <div class="fin"></div>
+                    <div class="fin right"></div>
+                </div>
+                <div class="fire-thruster"></div>
+            </div>
+
+            <button class="master-launch-btn" id="launch-btn" onclick="triggerEpicLaunch()">LANÇAMENTO BLOQUEADO</button>
+        </div>
+
+        <div class="gate-matrix">
+            
+            <div class="gate-card" id="card-and">
+                <span class="gate-badge">PORTA AND</span>
+                <h3>01. Células de Energia</h3>
+                <p>O reator precisa de estabilidade química E física. Ambas as fontes de energia precisam estar em 1.</p>
+                
+                <div class="input-row">
+                    <div class="interactive-node" id="node-q" onclick="toggleNode('q')">
+                        <div><span class="node-key">Q</span> Química</div>
+                        <div class="node-status" id="status-q">0</div>
+                    </div>
+                    <div class="interactive-node" id="node-w" onclick="toggleNode('w')">
+                        <div><span class="node-key">W</span> Física</div>
+                        <div class="node-status" id="status-w">0</div>
+                    </div>
+                </div>
+                <div class="output-led" id="out-and">SISTEMA OFF (0)</div>
+            </div>
+
+            <div class="gate-card" id="card-or">
+                <span class="gate-badge">PORTA OR</span>
+                <h3>02. Vetor de Navegação</h3>
+                <p>O trajeto é calculado se a Antena Principal OU o Sensor Estelar de redundância responderem (pelo menos um em 1).</p>
+                
+                <div class="input-row">
+                    <div class="interactive-node" id="node-e" onclick="toggleNode('e')">
+                        <div><span class="node-key">E</span> Antena</div>
+                        <div class="node-status" id="status-e">0</div>
+                    </div>
+                    <div class="interactive-node" id="node-r" onclick="toggleNode('r')">
+                        <div><span class="node-key">R</span> Sensor</div>
+                        <div class="node-status" id="status-r">0</div>
+                    </div>
+                </div>
+                <div class="output-led" id="out-or">SISTEMA OFF (0)</div>
+            </div>
+
+            <div class="gate-card" id="card-xor">
+                <span class="gate-badge">PORTA XOR</span>
+                <h3>03. Pressurização de Cabine</h3>
+                <p>Exclusividade Crítica! As válvulas interna e externa devem estar em estados **opostos** para equilibrar a pressão.</p>
+                
+                <div class="input-row">
+                    <div class="interactive-node" id="node-a" onclick="toggleNode('a')">
+                        <div><span class="node-key">A</span> Válv. Int</div>
+                        <div class="node-status" id="status-a">0</div>
+                    </div>
+                    <div class="interactive-node" id="node-s" onclick="toggleNode('s')">
+                        <div><span class="node-key">S</span> Válv. Ext</div>
+                        <div class="node-status" id="status-s">0</div>
+                    </div>
+                </div>
+                <div class="output-led" id="out-xor">SISTEMA OFF (0)</div>
+            </div>
+
+            <div class="gate-card" id="card-not">
+                <span class="gate-badge">PORTA NOT</span>
+                <h3>04. Interrupção de Emergência</h3>
+                <p>Inversor de segurança. O sinal de Abortar Missão deve estar Desativado (0) para que a saída de liberação seja (1).</p>
+                
+                <div class="input-row">
+                    <div class="interactive-node" id="node-d" onclick="toggleNode('d')">
+                        <div><span class="node-key">D</span> Abortar</div>
+                        <div class="node-status" id="status-d">0</div>
+                    </div>
+                </div>
+                <div class="output-led" id="out-not">SISTEMA OFF (0)</div>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <div class="keyboard-legend">
+            🎮 <strong>Modo Feira de Ciências (Controle Rápido):</strong> Pressione as teclas <span>Q</span> <span>W</span> <span>E</span> <span>R</span> <span>A</span> <span>S</span> <span>D</span> no teclado para alternar as portas. Pressione <span>Espaço</span> para Lançar quando estiver pronto!
+        </div>
+    </footer>
+
+    <script>
+        // Objeto de estado global do painel
+        const systemState = {
+            q: false, w: false, // AND inputs
+            e: false, r: false, // OR inputs
+            a: false, s: false, // XOR inputs
+            d: false            // NOT input
+        };
+
+        // Mapeamento de teclas físicas para os nós lógicos
+        const keyMap = {
+            'q': 'q', 'w': 'w',
+            'e': 'e', 'r': 'r',
+            'a': 'a', 's': 's',
+            'd': 'd'
+        };
+
+        // Escuta eventos de teclado
+        window.addEventListener('keydown', (event) => {
+            const key = event.key.toLowerCase();
+            if (keyMap[key]) {
+                toggleNode(keyMap[key]);
+            }
+            if (event.code === 'Space') {
+                event.preventDefault(); // Evita scroll do navegador
+                triggerEpicLaunch();
+            }
+        });
+
+        // Alterna o estado (0 ou 1) de um nó de entrada específico
+        function toggleNode(nodeId) {
+            systemState[nodeId] = !systemState[nodeId];
+            
+            // Atualiza Interface Visual do Nó
+            const nodeEl = document.getElementById(`node-${nodeId}`);
+            const statusEl = document.getElementById(`status-${nodeId}`);
+            
+            if (systemState[nodeId]) {
+                nodeEl.classList.add('active-input');
+                statusEl.innerText = '1';
+            } else {
+                nodeEl.classList.remove('active-input');
+                statusEl.innerText = '0';
+            }
+
+            // Recalcula toda a malha lógica
+            evaluateLogicGates();
+        }
+
+        // Faz os cálculos booleanos de cada bloco e do todo
+        function evaluateLogicGates() {
+            // 1. AND Gate
+            const andPassed = systemState.q && systemState.w;
+            updateGateCard('and', Laurel = andPassed, "ENERGIA ESTÁVEL (1)", "REATOR INSTÁVEL (0)");
+
+            // 2. OR Gate
+            const orPassed = systemState.e || systemState.r;
+            updateGateCard('or', orPassed, "ROTA CALCULADA (1)", "SEM SINAL DE GUIA (0)");
+
+            // 3. XOR Gate (True apenas se forem diferentes)
+            const xorPassed = systemState.a !== systemState.s;
+            updateGateCard('xor', xorPassed, "PRESSÃO SELADA (1)", "ERRO DE PRESSÃO (0)");
+
+            // 4. NOT Gate (Inverte o valor de D)
+            const notPassed = !systemState.d;
+            updateGateCard('not', notPassed, "DIRETRIZ SEGURA (1)", "MISSÃO ABORTADA (0)");
+
+            // Verificação Geral da Decolagem (Todas precisam passar)
+            const allSystemsGo = andPassed && orPassed && xorPassed && notPassed;
+            
+            const launchBtn = document.getElementById('launch-btn');
+            const launchpadPanel = document.getElementById('launchpad-panel');
+            const globalStatusText = document.getElementById('global-status-text');
+
+            if (allSystemsGo) {
+                launchpadPanel.classList.add('ready-to-fly');
+                launchBtn.classList.add('unlocked');
+                launchBtn.innerText = "EFETUAR LANÇAMENTO";
+                globalStatusText.innerText = "SISTEMAS PRONTOS (ALL SYSTEMS GO)";
+                globalStatusText.style.color = "var(--neon-green)";
+            } else {
+                launchpadPanel.classList.remove('ready-to-fly');
+                launchBtn.classList.remove('unlocked');
+                launchBtn.innerText = "LANÇAMENTO BLOQUEADO";
+                globalStatusText.innerText = "SISTEMAS INCOMPLETOS";
+                globalStatusText.style.color = "var(--neon-red)";
+            }
+        }
+
+        // Atualiza os componentes visuais dos cards individuais de portas
+        function updateGateCard(gateId, hasPassed, successMsg, failMsg) {
+            const card = document.getElementById(`card-${gateId}`);
+            const led = document.getElementById(`out-${gateId}`);
+            
+            if (hasPassed) {
+                card.classList.add('passed');
+                led.innerText = successMsg;
+            } else {
+                card.classList.remove('passed');
+                led.innerText = failMsg;
+            }
+        }
+
+        // Função de efeito de lançamento ao clicar ou apertar espaço com tudo ativo
+        function triggerEpicLaunch() {
+            const launchBtn = document.getElementById('launch-btn');
+            if (!launchBtn.classList.contains('unlocked')) return;
+
+            const rocket = document.getElementById('rocket-node');
+            rocket.classList.add('blasting-off');
+            
+            launchBtn.innerText = "🚀 DECOLANDO!!";
+            document.getElementById('global-status-text').innerText = "FOGUETE EM ÓRBITA!";
+
+            setTimeout(() => {
+                alert("🪐 Missão Cumprida com Sucesso! O poder da lógica booleana colocou nosso foguete em órbita!");
+                // Reseta o foguete de volta ao pad
+                rocket.classList.remove('blasting-off');
+                evaluateLogicGates();
+            }, 1600);
+        }
+
+        // Inicializa o estado das telas ao carregar a página
+        evaluateLogicGates();
+    </script>
+</body>
+</html>
